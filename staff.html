@@ -1,225 +1,321 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>スタッフ用コンディション確認</title>
-
-<style>
-body{
-  font-family:sans-serif;
-  max-width:1100px;
-  margin:auto;
-  padding:20px;
-}
-h1{
-  margin-bottom:20px;
-}
-.row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:20px;
-}
-input,button{
-  padding:8px;
-  font-size:16px;
-}
-button{
-  cursor:pointer;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-th,td{
-  border:1px solid #ddd;
-  padding:8px;
-  text-align:center;
-}
-th{
-  background:#f5f5f5;
-}
-.bad{
-  color:#d60000;
-  font-weight:bold;
-}
-.good{
-  color:#008000;
-}
-.card{
-  background:#f8f8f8;
-  padding:12px;
-  border-radius:10px;
-}
-</style>
+  <meta charset="UTF-8" />
+  <title>スタッフ用コンディション推移</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 { margin-bottom: 10px; }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f5f6f8;
+      border-radius: 12px;
+    }
+    input, select, button {
+      font-size: 1rem;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .section {
+      margin-top: 24px;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+    }
+    .checkbox-area {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 6px;
+    }
+    label {
+      display: block;
+    }
+    .chart-box {
+      margin-top: 28px;
+      padding: 16px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: white;
+    }
+    canvas {
+      max-height: 360px;
+    }
+    #status {
+      font-weight: bold;
+      margin-top: 12px;
+    }
+  </style>
 </head>
 
 <body>
+  <h1>スタッフ用コンディション推移</h1>
+  <p>所属固定・期間内データのある選手をグラフ化します。</p>
 
-<h1>スタッフ用コンディション確認</h1>
-
-<div class="row">
-  <div>
-    開始日<br>
-    <input type="date" id="startDate">
+  <div class="controls">
+    <div>
+      <label>開始日</label>
+      <input type="date" id="startDate">
+    </div>
+    <div>
+      <label>終了日</label>
+      <input type="date" id="endDate">
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button onclick="loadData()">データ表示</button>
+    </div>
   </div>
 
-  <div>
-    終了日<br>
-    <input type="date" id="endDate">
+  <div id="status"></div>
+
+  <div class="section">
+    <h3>選手フィルター</h3>
+    <div id="athleteFilters" class="checkbox-area"></div>
   </div>
 
-  <div style="align-self:end;">
-    <button onclick="loadData()">表示</button>
+  <div class="section">
+    <h3>表示する項目</h3>
+    <div id="metricFilters" class="checkbox-area"></div>
   </div>
-</div>
 
-<div id="status"></div>
-<div id="result"></div>
+  <div id="charts"></div>
 
-<script>
-const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
+  <script>
+    const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
 
-const STAFF_TEAM = "トーエネック"; // ←固定所属
+    // ここでスタッフ所属を固定
+    const STAFF_TEAM = "nigorigo";
 
-function todayStr(){
- const d=new Date();
- return d.toISOString().split("T")[0];
-}
+    const metrics = [
+      { key: "health", label: "全般的体調" },
+      { key: "fatigue", label: "疲労感" },
+      { key: "sleep_time", label: "睡眠時間" },
+      { key: "sleep_quality", label: "睡眠の深さ" },
+      { key: "appetite", label: "食欲" },
+      { key: "injury_severity", label: "故障・怪我の程度" },
+      { key: "training_intensity", label: "練習強度" },
+      { key: "bowel_shape", label: "便の形" },
+      { key: "running_distance", label: "走行距離" },
+      { key: "spo2", label: "SpO₂" },
+      { key: "pulse", label: "脈拍数" },
+      { key: "temperature", label: "体温" },
+      { key: "weight", label: "体重" }
+    ];
 
-document.getElementById("endDate").value=todayStr();
+    let rawData = [];
+    let charts = [];
 
-const before=new Date();
-before.setDate(before.getDate()-7);
-document.getElementById("startDate").value=before.toISOString().split("T")[0];
+    function todayStr() {
+      return new Date().toISOString().split("T")[0];
+    }
 
-async function loadData(){
+    function daysAgoStr(days) {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d.toISOString().split("T")[0];
+    }
 
-document.getElementById("status").innerHTML="読み込み中...";
-document.getElementById("result").innerHTML="";
+    document.getElementById("endDate").value = todayStr();
+    document.getElementById("startDate").value = daysAgoStr(7);
 
-const start=document.getElementById("startDate").value;
-const end=document.getElementById("endDate").value;
+    function destroyCharts() {
+      charts.forEach(chart => chart.destroy());
+      charts = [];
+    }
 
-const url=
-`${SUPABASE_URL}/rest/v1/condition?team=eq.${STAFF_TEAM}&date=gte.${start}&date=lte.${end}&order=date.asc`;
+    function colorForIndex(i) {
+      return `hsl(${(i * 57) % 360}, 70%, 45%)`;
+    }
 
-const res=await fetch(url,{
-headers:{
-apikey:SUPABASE_KEY,
-Authorization:`Bearer ${SUPABASE_KEY}`
-}
-});
+    async function loadData() {
+      destroyCharts();
 
-const data=await res.json();
+      document.getElementById("status").textContent = "読み込み中...";
+      document.getElementById("athleteFilters").innerHTML = "";
+      document.getElementById("metricFilters").innerHTML = "";
+      document.getElementById("charts").innerHTML = "";
 
-if(!data || data.length===0){
-document.getElementById("status").innerHTML="データなし";
-return;
-}
+      const start = document.getElementById("startDate").value;
+      const end = document.getElementById("endDate").value;
 
-document.getElementById("status").innerHTML=
-`${STAFF_TEAM} / ${data.length}件取得`;
+      const selectCols = [
+        "date",
+        "team",
+        "name",
+        ...metrics.map(m => m.key)
+      ].join(",");
 
-const grouped={};
+      const url =
+        `${SUPABASE_URL}/rest/v1/condition` +
+        `?team=eq.${encodeURIComponent(STAFF_TEAM)}` +
+        `&date=gte.${start}` +
+        `&date=lte.${end}` +
+        `&select=${selectCols}` +
+        `&order=date.asc`;
 
-data.forEach(row=>{
-if(!grouped[row.name]) grouped[row.name]=[];
-grouped[row.name].push(row);
-});
+      const res = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      });
 
-let html=`
-<table>
-<tr>
-<th>名前</th>
-<th>最新日</th>
-<th>体調</th>
-<th>疲労</th>
-<th>睡眠</th>
-<th>SpO₂</th>
-<th>脈拍</th>
-<th>コメント</th>
-</tr>
-`;
+      if (!res.ok) {
+        const text = await res.text();
+        document.getElementById("status").textContent = `取得エラー: ${text}`;
+        return;
+      }
 
-Object.keys(grouped).forEach(name=>{
+      rawData = await res.json();
 
-const arr=grouped[name];
-const latest=arr[arr.length-1];
-const prev=arr.length>=2 ? arr[arr.length-2] : null;
+      if (!rawData || rawData.length === 0) {
+        document.getElementById("status").textContent = "選択期間にデータがありません。";
+        return;
+      }
 
-let comment=[];
+      document.getElementById("status").textContent =
+        `${STAFF_TEAM}：${rawData.length}件のデータを取得しました。`;
 
-if(prev){
+      renderFilters();
+      renderCharts();
+    }
 
-if(latest.health - prev.health <= -10){
-comment.push("体調低下");
-}
+    function renderFilters() {
+      const athleteNames = [...new Set(rawData.map(row => row.name).filter(Boolean))];
 
-if(latest.fatigue - prev.fatigue >= 10){
-comment.push("疲労増加");
-}
+      document.getElementById("athleteFilters").innerHTML =
+        athleteNames.map(name => `
+          <label>
+            <input type="checkbox" class="athlete-check" value="${name}" checked onchange="renderCharts()">
+            ${name}
+          </label>
+        `).join("");
 
-if(latest.sleep_quality - prev.sleep_quality <= -10){
-comment.push("睡眠低下");
-}
+      document.getElementById("metricFilters").innerHTML =
+        metrics.map(m => `
+          <label>
+            <input type="checkbox" class="metric-check" value="${m.key}" checked onchange="renderCharts()">
+            ${m.label}
+          </label>
+        `).join("");
+    }
 
-if(latest.spo2 - prev.spo2 <= -2){
-comment.push("SpO₂低下");
-}
+    function getCheckedValues(className) {
+      return Array.from(document.querySelectorAll(`.${className}:checked`))
+        .map(el => el.value);
+    }
 
-if(latest.pulse - prev.pulse >= 8){
-comment.push("脈拍上昇");
-}
+    function renderCharts() {
+      destroyCharts();
 
-if(latest.health - prev.health >= 10){
-comment.push("体調改善");
-}
+      const selectedAthletes = getCheckedValues("athlete-check");
+      const selectedMetrics = getCheckedValues("metric-check");
 
-if(latest.fatigue - prev.fatigue <= -10){
-comment.push("疲労軽減");
-}
+      const chartsDiv = document.getElementById("charts");
+      chartsDiv.innerHTML = "";
 
-}
+      if (selectedAthletes.length === 0 || selectedMetrics.length === 0) {
+        chartsDiv.innerHTML = "<p>表示する選手または項目を選択してください。</p>";
+        return;
+      }
 
-if(comment.length===0){
-comment.push("安定");
-}
+      selectedMetrics.forEach(metricKey => {
+        const metric = metrics.find(m => m.key === metricKey);
+        if (!metric) return;
 
-let cls="";
+        const chartBox = document.createElement("div");
+        chartBox.className = "chart-box";
 
-if(comment.includes("体調低下") ||
-comment.includes("疲労増加") ||
-comment.includes("SpO₂低下")){
-cls="bad";
-}
+        const title = document.createElement("h3");
+        title.textContent = metric.label;
 
-if(comment[0]==="安定"){
-cls="good";
-}
+        const canvas = document.createElement("canvas");
+        canvas.id = `chart-${metricKey}`;
 
-html+=`
-<tr>
-<td>${name}</td>
-<td>${latest.date}</td>
-<td>${latest.health}</td>
-<td>${latest.fatigue}</td>
-<td>${latest.sleep_quality}</td>
-<td>${latest.spo2 ?? ""}</td>
-<td>${latest.pulse ?? ""}</td>
-<td class="${cls}">${comment.join(" / ")}</td>
-</tr>
-`;
+        chartBox.appendChild(title);
+        chartBox.appendChild(canvas);
+        chartsDiv.appendChild(chartBox);
 
-});
+        const datasets = selectedAthletes.map((name, idx) => {
+          const athleteData = rawData
+            .filter(row => row.name === name)
+            .filter(row => row[metricKey] !== null && row[metricKey] !== "" && row[metricKey] !== undefined)
+            .map(row => ({
+              x: row.date,
+              y: Number(row[metricKey])
+            }));
 
-html+="</table>";
+          return {
+            label: name,
+            data: athleteData,
+            borderColor: colorForIndex(idx),
+            backgroundColor: colorForIndex(idx),
+            tension: 0.25,
+            spanGaps: true
+          };
+        });
 
-document.getElementById("result").innerHTML=html;
+        const chart = new Chart(canvas, {
+          type: "line",
+          data: { datasets },
+          options: {
+            responsive: true,
+            parsing: false,
+            interaction: {
+              mode: "nearest",
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                position: "bottom"
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: ${context.parsed.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: "category",
+                title: {
+                  display: true,
+                  text: "日付"
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: metric.label
+                }
+              }
+            }
+          }
+        });
 
-}
-</script>
-
+        charts.push(chart);
+      });
+    }
+  </script>
 </body>
 </html>
