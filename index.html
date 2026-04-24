@@ -117,22 +117,26 @@
   <h1>コンディション記録</h1>
 
   <form id="condition-form">
+    <!-- 1. 日付 -->
     <label>
       1. 日付
       <input type="date" name="date" required />
     </label>
 
+    <!-- 2. 所属 -->
     <label>
       2. 所属
       <input type="text" name="team" required />
     </label>
 
+    <!-- 3. 名前 -->
     <label>
       3. 名前
       <input type="text" name="name" required />
       <small>※ フルネームで入力してください</small>
     </label>
 
+    <!-- 4. 全般的体調 -->
     <label>
       4. 全般的体調
       <div class="slider-row">
@@ -142,6 +146,7 @@
       </div>
     </label>
 
+    <!-- 5. 疲労感 -->
     <label>
       5. 疲労感
       <div class="slider-row">
@@ -151,12 +156,14 @@
       </div>
     </label>
 
+    <!-- 6. 睡眠時間 -->
     <label>
       6. 睡眠時間（例：7.25, 7.5）
       <input type="number" name="sleep_time" min="0" max="24" step="0.1" />
       <small>※ 手入力もできます</small>
     </label>
 
+    <!-- 7. 睡眠の深さ -->
     <label>
       7. 睡眠の深さ
       <div class="slider-row">
@@ -166,6 +173,7 @@
       </div>
     </label>
 
+    <!-- 8. 睡眠状況 -->
     <fieldset>
       <legend>8. 睡眠状況（複数選択）</legend>
       <div class="checkbox-group">
@@ -179,6 +187,7 @@
       </div>
     </fieldset>
 
+    <!-- 9. 食欲 -->
     <label>
       9. 食欲
       <div class="slider-row">
@@ -188,6 +197,7 @@
       </div>
     </label>
 
+    <!-- 10. 故障・怪我の有無 -->
     <fieldset>
       <legend>10. 故障・怪我の有無</legend>
       <div class="radio-group">
@@ -196,12 +206,14 @@
       </div>
     </fieldset>
 
+    <!-- 11. 故障・怪我の箇所 -->
     <label id="injury-part-wrapper" style="display:none;">
       11. 故障・怪我の箇所
       <input type="text" name="injury_part" />
       <small>※ 故障・怪我がある場合は部位を具体的に入力してください（例：右足首）</small>
     </label>
 
+    <!-- 12. 故障・怪我の程度 -->
     <label>
       12. 故障・怪我の程度
       <div class="slider-row">
@@ -211,6 +223,7 @@
       </div>
     </label>
 
+    <!-- 13. 練習強度 -->
     <label>
       13. 練習強度
       <div class="slider-row">
@@ -220,6 +233,7 @@
       </div>
     </label>
 
+    <!-- 14. 排便の有無 -->
     <fieldset>
       <legend>14. 前日の排便の有無</legend>
       <div class="radio-group">
@@ -228,6 +242,7 @@
       </div>
     </fieldset>
 
+    <!-- 15. 便の形 -->
     <div id="stool-section">
       <p>便の形（1〜7）</p>
       <img src="stool_chart.png" alt="便の形チャート" />
@@ -247,36 +262,42 @@
       </label>
     </div>
 
+    <!-- 16. 走行距離 -->
     <label>
       16. 前日の走行距離（km）
       <input type="number" name="running_distance" min="0" max="100" step="0.1" />
       <small>※ 手入力もできます</small>
     </label>
 
+    <!-- 17. SpO2 -->
     <label>
       17. SpO₂（％）
       <input type="number" name="spo2" min="0" max="100" />
       <small>※ 手入力もできます</small>
     </label>
 
+    <!-- 18. 脈拍数 -->
     <label>
       18. 脈拍数（拍/分）
       <input type="number" name="pulse" min="0" max="200" />
       <small>※ 手入力もできます</small>
     </label>
 
+    <!-- 19. 体温 -->
     <label>
       19. 体温（℃）
       <input type="number" name="temperature" min="0" max="42" step="0.1" />
       <small>※ 手入力もできます</small>
     </label>
 
+    <!-- 20. 体重 -->
     <label>
       20. 体重（kg）
       <input type="number" name="weight" min="0" max="150" step="0.1" />
       <small>※ 手入力もできます</small>
     </label>
 
+    <!-- 21. 特記事項 -->
     <fieldset>
       <legend>21. 特記事項（複数選択）</legend>
       <div class="checkbox-group">
@@ -303,6 +324,7 @@
       <small>※ 特にない場合は「特になし」を選択してください</small>
     </fieldset>
 
+    <!-- 21-1. その他 -->
     <label id="other-symptoms-wrapper" style="display:none;">
       21-1. その他の症状
       <input type="text" name="other_symptoms" />
@@ -315,7 +337,7 @@
 
   <script>
     const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
+    const SUPABASE_ANON_KEY = "あなたの既存の anon key をここに入れる";
 
     const form = document.getElementById("condition-form");
     const messageDiv = document.getElementById("message");
@@ -385,11 +407,15 @@
       return sleepIssuesText.split(",").map(s => s.trim()).includes(target);
     }
 
+    function avg(arr) {
+      if (!arr || arr.length === 0) return null;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
     function generateComment(data) {
       const comments = [];
       const cautionFlags = [];
 
-      // 全般体調
       if (data.health <= 30) {
         uniquePush(comments, "全般的な体調がかなり低めです。");
         uniquePush(cautionFlags, "体調");
@@ -398,7 +424,6 @@
         uniquePush(cautionFlags, "体調");
       }
 
-      // 疲労
       if (data.fatigue >= 80) {
         uniquePush(comments, "疲労感がかなり高い状態です。");
         uniquePush(cautionFlags, "疲労");
@@ -407,7 +432,6 @@
         uniquePush(cautionFlags, "疲労");
       }
 
-      // 睡眠時間
       if (data.sleep_time !== null) {
         if (data.sleep_time < 5) {
           uniquePush(comments, "睡眠時間がかなり短めです。");
@@ -418,7 +442,6 @@
         }
       }
 
-      // 睡眠の質
       if (data.sleep_quality <= 30) {
         uniquePush(comments, "睡眠の質がかなり低めです。");
         uniquePush(cautionFlags, "睡眠");
@@ -427,7 +450,6 @@
         uniquePush(cautionFlags, "睡眠");
       }
 
-      // 睡眠状況
       if (data.sleep_issues) {
         if (
           hasSleepIssue(data.sleep_issues, "寝付けなかった") ||
@@ -439,7 +461,6 @@
         }
       }
 
-      // 食欲
       if (data.appetite <= 30) {
         uniquePush(comments, "食欲低下が目立ちます。");
         uniquePush(cautionFlags, "食欲");
@@ -448,7 +469,6 @@
         uniquePush(cautionFlags, "食欲");
       }
 
-      // 故障
       if (data.injury === "有") {
         uniquePush(comments, "故障・怪我の申告があります。");
         uniquePush(cautionFlags, "故障");
@@ -462,12 +482,10 @@
         uniquePush(cautionFlags, "故障");
       }
 
-      // 練習強度
       if (data.training_intensity >= 80) {
         uniquePush(comments, "前日の練習強度が高めです。");
       }
 
-      // 排便
       if (data.bowel_movement === "無") {
         uniquePush(comments, "前日の排便がありません。");
       }
@@ -481,12 +499,10 @@
         }
       }
 
-      // 走行距離
       if (data.running_distance !== null && data.running_distance >= 20) {
         uniquePush(comments, "前日の走行距離が多めです。");
       }
 
-      // SpO2
       if (data.spo2 !== null) {
         if (data.spo2 <= 90) {
           uniquePush(comments, "SpO₂が低めです。");
@@ -497,15 +513,11 @@
         }
       }
 
-      // 脈拍
-      if (data.pulse !== null) {
-        if (data.pulse >= 80) {
-          uniquePush(comments, "脈拍数が高めです。");
-          uniquePush(cautionFlags, "脈拍");
-        }
+      if (data.pulse !== null && data.pulse >= 80) {
+        uniquePush(comments, "脈拍数が高めです。");
+        uniquePush(cautionFlags, "脈拍");
       }
 
-      // 体温
       if (data.temperature !== null) {
         if (data.temperature >= 37.5) {
           uniquePush(comments, "体温が高めです。");
@@ -516,7 +528,6 @@
         }
       }
 
-      // 特記事項
       if (data.symptoms) {
         if (hasSymptom(data.symptoms, "頭痛")) {
           uniquePush(comments, "頭痛の申告があります。");
@@ -567,7 +578,6 @@
         }
       }
 
-      // 総合コメント
       if (comments.length === 0) {
         return "大きな問題は目立たず、概ね安定しています。本日も良いコンディション維持を意識してください。";
       }
@@ -581,6 +591,94 @@
       }
 
       return summary;
+    }
+
+    async function getHistory(data) {
+      const url =
+        `${SUPABASE_URL}/rest/v1/condition` +
+        `?team=eq.${encodeURIComponent(data.team)}` +
+        `&name=eq.${encodeURIComponent(data.name)}` +
+        `&select=date,health,fatigue,sleep_quality,spo2` +
+        `&order=date.asc`;
+
+      const res = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+
+      if (!res.ok) {
+        console.error("履歴取得エラー");
+        return [];
+      }
+
+      return await res.json();
+    }
+
+    function generateTrendComment(today, history) {
+      const comments = [];
+
+      if (!history || history.length === 0) {
+        return generateComment(today);
+      }
+
+      // 今日の保存後に履歴を取得するので、末尾は今日自身になる可能性が高い
+      // そのため「今日を除いた直前データ」を探す
+      const historyWithoutToday = history.filter(row => row.date !== today.date);
+      const prev = historyWithoutToday.length > 0
+        ? historyWithoutToday[historyWithoutToday.length - 1]
+        : null;
+
+      if (prev) {
+        if (prev.fatigue != null) {
+          const diff = today.fatigue - prev.fatigue;
+          if (diff >= 10) {
+            comments.push("疲労感が前日より上昇しています。");
+          } else if (diff <= -10) {
+            comments.push("疲労感は前日より改善しています。");
+          }
+        }
+
+        if (prev.health != null) {
+          const diff = today.health - prev.health;
+          if (diff <= -10) {
+            comments.push("全般的な体調が前日より低下しています。");
+          } else if (diff >= 10) {
+            comments.push("全般的な体調は前日より改善しています。");
+          }
+        }
+
+        if (today.spo2 != null && prev.spo2 != null) {
+          const diff = today.spo2 - prev.spo2;
+          if (diff <= -2) {
+            comments.push("SpO₂が前日より低下しています。");
+          } else if (diff >= 2) {
+            comments.push("SpO₂は前日より改善しています。");
+          }
+        }
+      }
+
+      const sleepVals = historyWithoutToday
+        .slice(-3)
+        .map(x => x.sleep_quality)
+        .filter(x => x != null);
+
+      const sleepAvg = avg(sleepVals);
+
+      if (sleepAvg != null) {
+        if (today.sleep_quality <= sleepAvg - 10) {
+          comments.push("睡眠の質が最近の平均より低下しています。");
+        } else if (today.sleep_quality >= sleepAvg + 10) {
+          comments.push("睡眠の質は最近の平均より良好です。");
+        }
+      }
+
+      if (comments.length === 0) {
+        return generateComment(today);
+      }
+
+      return comments.join("") + " " + generateComment(today);
     }
 
     form.addEventListener("submit", async (e) => {
@@ -649,9 +747,8 @@
         return;
       }
 
-      const comment = generateComment(data);
-
       try {
+        // 1. まず保存
         const res = await fetch(`${SUPABASE_URL}/rest/v1/condition`, {
           method: "POST",
           headers: {
@@ -666,42 +763,50 @@
         if (!res.ok) {
           const text = await res.text();
           messageDiv.textContent = `送信エラー: ${res.status} ${text}`;
-        } else {
-          document.body.innerHTML = `
-            <div style="
-              max-width: 720px;
-              margin: 0 auto;
-              padding: 48px 16px;
-              text-align: center;
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            ">
-              <h1 style="font-size: 1.6rem;">✅ 送信が完了しました</h1>
-
-              <p style="margin-top: 16px; font-size: 1.1rem;">
-                ご協力ありがとうございました。<br>
-                本日もよろしくお願いいたします。
-              </p>
-
-              <div class="result-card">
-                <h3>📋 本日のコメント</h3>
-                <p>${comment}</p>
-                <p class="subtext">※ 入力内容をもとに自動表示しています</p>
-              </div>
-
-              <button
-                style="
-                  margin-top: 32px;
-                  padding: 10px 20px;
-                  font-size: 1rem;
-                  cursor: pointer;
-                "
-                onclick="location.reload()"
-              >
-                もう一度入力する
-              </button>
-            </div>
-          `;
+          return;
         }
+
+        // 2. 保存後に履歴取得
+        const history = await getHistory(data);
+
+        // 3. 履歴込みコメント生成
+        const comment = generateTrendComment(data, history);
+
+        // 4. 完了画面
+        document.body.innerHTML = `
+          <div style="
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 48px 16px;
+            text-align: center;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          ">
+            <h1 style="font-size: 1.6rem;">✅ 送信が完了しました</h1>
+
+            <p style="margin-top: 16px; font-size: 1.1rem;">
+              ご協力ありがとうございました。<br>
+              本日もよろしくお願いいたします。
+            </p>
+
+            <div class="result-card">
+              <h3>📋 本日のコメント</h3>
+              <p>${comment}</p>
+              <p class="subtext">※ 当日の入力と過去データの変動をもとに自動表示しています</p>
+            </div>
+
+            <button
+              style="
+                margin-top: 32px;
+                padding: 10px 20px;
+                font-size: 1rem;
+                cursor: pointer;
+              "
+              onclick="location.reload()"
+            >
+              もう一度入力する
+            </button>
+          </div>
+        `;
       } catch (err) {
         console.error(err);
         messageDiv.textContent = "通信エラーが発生しました。ネットワークを確認してください。";
