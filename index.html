@@ -284,7 +284,7 @@
 
   <script>
     const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
-    const SUPABASE_ANON_KEY = "あなたの既存の anon key をここに入れる";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
 
     const form = document.getElementById("condition-form");
     const messageDiv = document.getElementById("message");
@@ -339,8 +339,9 @@
     symptomCheckboxes.forEach(cb => cb.addEventListener("change", updateOtherSymptomsVisibility));
     updateOtherSymptomsVisibility();
 
-    function uniquePush(arr, text) {
-      if (text && !arr.includes(text)) arr.push(text);
+    function avg(arr) {
+      if (!arr || arr.length === 0) return null;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
     }
 
     function splitText(text) {
@@ -348,203 +349,12 @@
       return text.split(",").map(s => s.trim()).filter(Boolean);
     }
 
-    function hasSymptom(symptomsText, target) {
-      return splitText(symptomsText).includes(target);
+    function hasItem(text, target) {
+      return splitText(text).includes(target);
     }
 
-    function hasSleepIssue(sleepIssuesText, target) {
-      return splitText(sleepIssuesText).includes(target);
-    }
-
-    function avg(arr) {
-      if (!arr || arr.length === 0) return null;
-      return arr.reduce((a, b) => a + b, 0) / arr.length;
-    }
-
-    function generateComment(data) {
-      const comments = [];
-      const cautionFlags = [];
-
-      if (data.health <= 30) {
-        uniquePush(comments, "全般的な体調がかなり低めです。");
-        uniquePush(cautionFlags, "体調");
-      } else if (data.health <= 40) {
-        uniquePush(comments, "全般的な体調が低めです。");
-        uniquePush(cautionFlags, "体調");
-      }
-
-      if (data.fatigue >= 80) {
-        uniquePush(comments, "疲労感がかなり高い状態です。");
-        uniquePush(cautionFlags, "疲労");
-      } else if (data.fatigue >= 70) {
-        uniquePush(comments, "疲労感が高い状態です。");
-        uniquePush(cautionFlags, "疲労");
-      }
-
-      if (data.sleep_time !== null) {
-        if (data.sleep_time < 5) {
-          uniquePush(comments, "睡眠時間がかなり短めです。");
-          uniquePush(cautionFlags, "睡眠");
-        } else if (data.sleep_time < 6) {
-          uniquePush(comments, "睡眠時間が短めです。");
-          uniquePush(cautionFlags, "睡眠");
-        }
-      }
-
-      if (data.sleep_quality <= 30) {
-        uniquePush(comments, "睡眠の深さがかなり浅めです。");
-        uniquePush(cautionFlags, "睡眠");
-      } else if (data.sleep_quality <= 40) {
-        uniquePush(comments, "睡眠の深さが浅めです。");
-        uniquePush(cautionFlags, "睡眠");
-      }
-
-      if (data.sleep_issues) {
-        if (
-          hasSleepIssue(data.sleep_issues, "寝付けなかった") ||
-          hasSleepIssue(data.sleep_issues, "普段より寝付けなかった") ||
-          hasSleepIssue(data.sleep_issues, "何回も目覚めた") ||
-          hasSleepIssue(data.sleep_issues, "寝汗をかいた")
-        ) {
-          uniquePush(comments, "睡眠状況にも気になる点があります。");
-          uniquePush(cautionFlags, "睡眠");
-        }
-      }
-
-      if (data.appetite <= 30) {
-        uniquePush(comments, "食欲低下が目立ちます。");
-        uniquePush(cautionFlags, "食欲");
-      } else if (data.appetite <= 40) {
-        uniquePush(comments, "食欲がやや低めです。");
-        uniquePush(cautionFlags, "食欲");
-      }
-
-      if (data.injury === "有") {
-        uniquePush(comments, "故障・怪我の申告があります。");
-        uniquePush(cautionFlags, "故障");
-      }
-
-      if (data.injury_severity >= 70) {
-        uniquePush(comments, "故障・怪我の程度が高めです。");
-        uniquePush(cautionFlags, "故障");
-      } else if (data.injury_severity >= 50 && data.injury === "有") {
-        uniquePush(comments, "故障部位の状態確認が必要です。");
-        uniquePush(cautionFlags, "故障");
-      }
-
-      if (data.training_intensity >= 80) {
-        uniquePush(comments, "前日の練習強度が高めです。");
-        uniquePush(cautionFlags, "負荷");
-      }
-
-      if (data.bowel_movement === "無") {
-        uniquePush(comments, "前日の排便がありません。");
-      }
-
-      if (data.bowel_shape) {
-        if (data.bowel_shape === "1" || data.bowel_shape === "2") {
-          uniquePush(comments, "便性状は硬めです。");
-        } else if (data.bowel_shape === "6" || data.bowel_shape === "7") {
-          uniquePush(comments, "便性状は軟便傾向です。");
-          uniquePush(cautionFlags, "消化器");
-        }
-      }
-
-      if (data.running_distance !== null && data.running_distance >= 20) {
-        uniquePush(comments, "前日の走行距離が多めです。");
-      }
-
-      if (data.spo2 !== null) {
-        if (data.spo2 <= 90) {
-          uniquePush(comments, "SpO₂が低めです。");
-          uniquePush(cautionFlags, "SpO2");
-        } else if (data.spo2 <= 92) {
-          uniquePush(comments, "SpO₂がやや低めです。");
-          uniquePush(cautionFlags, "SpO2");
-        }
-      }
-
-      if (data.pulse !== null && data.pulse >= 80) {
-        uniquePush(comments, "脈拍数が高めです。");
-        uniquePush(cautionFlags, "脈拍");
-      }
-
-      if (data.temperature !== null) {
-        if (data.temperature >= 37.5) {
-          uniquePush(comments, "体温が高めです。");
-          uniquePush(cautionFlags, "体温");
-        } else if (data.temperature >= 37.0) {
-          uniquePush(comments, "体温がやや高めです。");
-          uniquePush(cautionFlags, "体温");
-        }
-      }
-
-      if (data.symptoms) {
-        if (hasSymptom(data.symptoms, "頭痛")) {
-          uniquePush(comments, "頭痛の申告があります。");
-          uniquePush(cautionFlags, "症状");
-        }
-
-        if (
-          hasSymptom(data.symptoms, "咳") ||
-          hasSymptom(data.symptoms, "喉の痛み") ||
-          hasSymptom(data.symptoms, "鼻水") ||
-          hasSymptom(data.symptoms, "痰") ||
-          hasSymptom(data.symptoms, "悪寒") ||
-          hasSymptom(data.symptoms, "熱感") ||
-          hasSymptom(data.symptoms, "倦怠感")
-        ) {
-          uniquePush(comments, "体調変化を示す症状があります。");
-          uniquePush(cautionFlags, "症状");
-        }
-
-        if (
-          hasSymptom(data.symptoms, "下痢") ||
-          hasSymptom(data.symptoms, "腹痛") ||
-          hasSymptom(data.symptoms, "吐き気")
-        ) {
-          uniquePush(comments, "消化器症状の申告があります。");
-          uniquePush(cautionFlags, "消化器");
-        }
-
-        if (hasSymptom(data.symptoms, "息苦しさ")) {
-          uniquePush(comments, "呼吸のしづらさの申告があります。");
-          uniquePush(cautionFlags, "症状");
-        }
-
-        if (
-          hasSymptom(data.symptoms, "月経") ||
-          hasSymptom(data.symptoms, "月経痛（腰痛・下腹部痛等）")
-        ) {
-          uniquePush(comments, "月経関連の体調変化がみられます。");
-        }
-
-        if (hasSymptom(data.symptoms, "月経前不調（腰痛やむくみ、体重増加）")) {
-          uniquePush(comments, "月経前の不調がみられます。");
-        }
-
-        if (hasSymptom(data.symptoms, "服薬")) {
-          uniquePush(comments, "服薬の申告があります。");
-        }
-
-        if (hasSymptom(data.symptoms, "その他") && data.other_symptoms) {
-          uniquePush(comments, `その他の申告: ${data.other_symptoms}。`);
-        }
-      }
-
-      if (comments.length === 0) {
-        return "大きな問題は目立たず、概ね安定しています。本日も良いコンディション維持を意識してください。";
-      }
-
-      let summary = comments.join("");
-
-      if (cautionFlags.length >= 3) {
-        summary += " 複数項目に注意所見があるため、練習前に状態確認を行ってください。";
-      } else if (cautionFlags.length >= 1) {
-        summary += " 状態確認を推奨します。";
-      }
-
-      return summary;
+    function addFinding(list, category, priority, text) {
+      list.push({ category, priority, text });
     }
 
     async function getHistory(data) {
@@ -552,7 +362,7 @@
         `${SUPABASE_URL}/rest/v1/condition` +
         `?team=eq.${encodeURIComponent(data.team)}` +
         `&name=eq.${encodeURIComponent(data.name)}` +
-        `&select=date,health,fatigue,sleep_quality,appetite,injury_severity,training_intensity,spo2,pulse` +
+        `&select=date,health,fatigue,sleep_time,sleep_quality,sleep_issues,appetite,injury,injury_severity,training_intensity,bowel_movement,bowel_shape,running_distance,spo2,pulse,temperature,symptoms` +
         `&order=date.asc`;
 
       const res = await fetch(url, {
@@ -570,128 +380,232 @@
       return await res.json();
     }
 
-    function generateTrendComment(today, history) {
-      const comments = [];
+    function generateComment(data) {
+      const findings = [];
 
-      if (!history || history.length === 0) {
-        return generateComment(today);
+      if (data.health <= 30) {
+        addFinding(findings, "recovery", 3, "全般的な体調がかなり低めです");
+      } else if (data.health <= 40) {
+        addFinding(findings, "recovery", 2, "全般的な体調が低めです");
       }
 
-      const historyWithoutToday = history.filter(row => row.date !== today.date);
+      if (data.fatigue >= 80) {
+        addFinding(findings, "recovery", 3, "疲労感がかなり高い状態です");
+      } else if (data.fatigue >= 70) {
+        addFinding(findings, "recovery", 2, "疲労感が高めです");
+      }
 
+      if (data.sleep_time !== null && data.sleep_time < 6) {
+        addFinding(findings, "recovery", 2, "睡眠時間が短めです");
+      }
+
+      if (data.sleep_quality <= 30) {
+        addFinding(findings, "recovery", 3, "睡眠の深さがかなり浅めです");
+      } else if (data.sleep_quality <= 40) {
+        addFinding(findings, "recovery", 2, "睡眠の深さが浅めです");
+      }
+
+      if (data.appetite <= 40) {
+        addFinding(findings, "recovery", 2, "食欲が低めです");
+      }
+
+      if (data.injury === "有") {
+        addFinding(findings, "injury", 3, "故障・怪我の申告があります");
+      }
+
+      if (data.injury_severity >= 70) {
+        addFinding(findings, "injury", 3, "故障・怪我の程度が高めです");
+      }
+
+      if (data.training_intensity >= 80) {
+        addFinding(findings, "load", 2, "前日の練習強度が高めです");
+      }
+
+      if (data.spo2 !== null && data.spo2 <= 92) {
+        addFinding(findings, "altitude", 3, "SpO₂が低めです");
+      }
+
+      if (data.pulse !== null && data.pulse >= 80) {
+        addFinding(findings, "altitude", 2, "脈拍数が高めです");
+      }
+
+      if (data.temperature !== null && data.temperature >= 37.0) {
+        addFinding(findings, "illness", 3, "体温がやや高めです");
+      }
+
+      if (data.bowel_shape === "6" || data.bowel_shape === "7") {
+        addFinding(findings, "digestive", 2, "便性状は軟便傾向です");
+      }
+
+      if (hasItem(data.symptoms, "頭痛")) {
+        addFinding(findings, "altitude", 3, "頭痛の申告があります");
+      }
+
+      if (
+        hasItem(data.symptoms, "咳") ||
+        hasItem(data.symptoms, "喉の痛み") ||
+        hasItem(data.symptoms, "鼻水") ||
+        hasItem(data.symptoms, "悪寒") ||
+        hasItem(data.symptoms, "熱感") ||
+        hasItem(data.symptoms, "倦怠感")
+      ) {
+        addFinding(findings, "illness", 3, "体調変化を示す症状があります");
+      }
+
+      if (
+        hasItem(data.symptoms, "下痢") ||
+        hasItem(data.symptoms, "腹痛") ||
+        hasItem(data.symptoms, "吐き気")
+      ) {
+        addFinding(findings, "digestive", 3, "消化器症状の申告があります");
+      }
+
+      return findings;
+    }
+
+    function generateTrendComment(today, history) {
+      const findings = generateComment(today);
+
+      const historyWithoutToday = history.filter(row => row.date !== today.date);
       const prev = historyWithoutToday.length > 0
         ? historyWithoutToday[historyWithoutToday.length - 1]
         : null;
 
-      if (prev) {
-        if (prev.health != null) {
-          const diff = today.health - prev.health;
-          if (diff <= -10) {
-            comments.push("全般的な体調が前日より低下しています。");
-          } else if (diff >= 10) {
-            comments.push("全般的な体調は前日より改善しています。");
-          }
-        }
-
-        if (prev.fatigue != null) {
-          const diff = today.fatigue - prev.fatigue;
-          if (diff >= 10) {
-            comments.push("疲労感が前日より上昇しています。");
-          } else if (diff <= -10) {
-            comments.push("疲労感は前日より軽減しています。");
-          }
-        }
-
-        if (prev.sleep_quality != null) {
-          const diff = today.sleep_quality - prev.sleep_quality;
-          if (diff <= -10) {
-            comments.push("睡眠の深さが前日より低下しています。");
-          } else if (diff >= 10) {
-            comments.push("睡眠の深さは前日より改善しています。");
-          }
-        }
-
-        if (prev.appetite != null) {
-          const diff = today.appetite - prev.appetite;
-          if (diff <= -10) {
-            comments.push("食欲が前日より低下しています。");
-          } else if (diff >= 10) {
-            comments.push("食欲は前日より改善しています。");
-          }
-        }
-
-        if (prev.injury_severity != null) {
-          const diff = today.injury_severity - prev.injury_severity;
-          if (diff >= 10) {
-            comments.push("故障・怪我の程度が前日より強くなっています。");
-          } else if (diff <= -10) {
-            comments.push("故障・怪我の程度は前日より軽減しています。");
-          }
-        }
-
-        if (prev.training_intensity != null) {
-          const diff = today.training_intensity - prev.training_intensity;
-          if (diff >= 15) {
-            comments.push("前日より練習強度が高く、負荷が増えています。");
-          }
-        }
-
-        if (today.spo2 != null && prev.spo2 != null) {
-          const diff = today.spo2 - prev.spo2;
-          if (diff <= -2) {
-            comments.push("SpO₂が前日より低下しています。");
-          } else if (diff >= 2) {
-            comments.push("SpO₂は前日より改善しています。");
-          }
-        }
-
-        if (today.pulse != null && prev.pulse != null) {
-          const diff = today.pulse - prev.pulse;
-          if (diff >= 8) {
-            comments.push("脈拍数が前日より上昇しており、疲労やストレスの影響に注意が必要です。");
-          } else if (diff <= -8) {
-            comments.push("脈拍数は前日より低下しています。");
-          }
-        }
-      }
-
       const recent3 = historyWithoutToday.slice(-3);
 
-      const healthAvg = avg(recent3.map(x => x.health).filter(x => x != null));
-      if (healthAvg != null && today.health <= healthAvg - 10) {
-        comments.push("全般的な体調が最近の平均より低下しています。");
+      if (prev) {
+        if (prev.fatigue != null && today.fatigue - prev.fatigue >= 10) {
+          addFinding(findings, "recovery", 3, "疲労感が前日より上昇しています");
+        }
+
+        if (prev.health != null && today.health - prev.health <= -10) {
+          addFinding(findings, "recovery", 3, "全般的な体調が前日より低下しています");
+        }
+
+        if (prev.sleep_quality != null && today.sleep_quality - prev.sleep_quality <= -10) {
+          addFinding(findings, "recovery", 2, "睡眠の深さが前日より低下しています");
+        }
+
+        if (prev.appetite != null && today.appetite - prev.appetite <= -10) {
+          addFinding(findings, "recovery", 2, "食欲が前日より低下しています");
+        }
+
+        if (prev.spo2 != null && today.spo2 != null && today.spo2 - prev.spo2 <= -2) {
+          addFinding(findings, "altitude", 3, "SpO₂が前日より低下しています");
+        }
+
+        if (prev.pulse != null && today.pulse != null && today.pulse - prev.pulse >= 8) {
+          addFinding(findings, "altitude", 2, "脈拍数が前日より上昇しています");
+        }
+
+        if (prev.injury_severity != null && today.injury_severity - prev.injury_severity >= 10) {
+          addFinding(findings, "injury", 3, "故障・怪我の程度が前日より強くなっています");
+        }
       }
 
       const fatigueAvg = avg(recent3.map(x => x.fatigue).filter(x => x != null));
       if (fatigueAvg != null && today.fatigue >= fatigueAvg + 10) {
-        comments.push("疲労感が最近の平均より高くなっています。");
+        addFinding(findings, "recovery", 2, "疲労感が最近の平均より高くなっています");
+      }
+
+      const healthAvg = avg(recent3.map(x => x.health).filter(x => x != null));
+      if (healthAvg != null && today.health <= healthAvg - 10) {
+        addFinding(findings, "recovery", 2, "全般的な体調が最近の平均より低下しています");
       }
 
       const sleepAvg = avg(recent3.map(x => x.sleep_quality).filter(x => x != null));
       if (sleepAvg != null && today.sleep_quality <= sleepAvg - 10) {
-        comments.push("睡眠の深さが最近の平均より低下しています。");
-      }
-
-      const appetiteAvg = avg(recent3.map(x => x.appetite).filter(x => x != null));
-      if (appetiteAvg != null && today.appetite <= appetiteAvg - 10) {
-        comments.push("食欲が最近の平均より低下しています。");
+        addFinding(findings, "recovery", 2, "睡眠の深さが最近の平均より低下しています");
       }
 
       const spo2Avg = avg(recent3.map(x => x.spo2).filter(x => x != null));
       if (spo2Avg != null && today.spo2 != null && today.spo2 <= spo2Avg - 2) {
-        comments.push("SpO₂が最近の平均より低下しています。");
+        addFinding(findings, "altitude", 3, "SpO₂が最近の平均より低下しています");
       }
 
-      const pulseAvg = avg(recent3.map(x => x.pulse).filter(x => x != null));
-      if (pulseAvg != null && today.pulse != null && today.pulse >= pulseAvg + 8) {
-        comments.push("脈拍数が最近の平均より高くなっています。");
+      return buildNaturalComment(findings);
+    }
+
+    function buildNaturalComment(findings) {
+      if (!findings || findings.length === 0) {
+        return "大きな問題は目立たず、コンディションは概ね安定しています。本日も通常どおり状態を確認しながら進めてください。";
       }
 
-      if (comments.length === 0) {
-        return generateComment(today);
+      const unique = [];
+      const seen = new Set();
+
+      findings
+        .sort((a, b) => b.priority - a.priority)
+        .forEach(f => {
+          if (!seen.has(f.text)) {
+            unique.push(f);
+            seen.add(f.text);
+          }
+        });
+
+      const byCategory = {
+        illness: unique.filter(f => f.category === "illness"),
+        altitude: unique.filter(f => f.category === "altitude"),
+        injury: unique.filter(f => f.category === "injury"),
+        recovery: unique.filter(f => f.category === "recovery"),
+        digestive: unique.filter(f => f.category === "digestive"),
+        load: unique.filter(f => f.category === "load")
+      };
+
+      const main = [];
+
+      if (byCategory.illness.length > 0) {
+        main.push("体調変化を示す所見がみられます");
       }
 
-      return comments.join("") + " " + generateComment(today);
+      if (byCategory.altitude.length > 0) {
+        main.push("SpO₂や脈拍、頭痛など高地環境への反応として確認したい項目があります");
+      }
+
+      if (byCategory.injury.length > 0) {
+        main.push("故障・怪我に関する申告があります");
+      }
+
+      if (byCategory.recovery.length > 0) {
+        const recoveryTexts = byCategory.recovery
+          .slice(0, 2)
+          .map(f => f.text.replace("。", ""));
+        main.push(recoveryTexts.join("、"));
+      }
+
+      if (main.length === 0) {
+        const texts = unique.slice(0, 2).map(f => f.text.replace("。", ""));
+        main.push(texts.join("、"));
+      }
+
+      let sentence1 = main.slice(0, 2).join("。") + "。";
+
+      let sentence2 = "";
+
+      if (byCategory.load.length > 0 && byCategory.recovery.length > 0) {
+        sentence2 = "前日の負荷も踏まえると、回復状態を確認したうえで練習に入るのがよさそうです。";
+      } else if (byCategory.altitude.length > 0) {
+        sentence2 = "高地環境への反応や体調変化の継続に注意してください。";
+      } else if (byCategory.injury.length > 0) {
+        sentence2 = "痛みや違和感の変化を確認し、必要に応じて練習内容を調整してください。";
+      } else if (byCategory.recovery.length > 0) {
+        sentence2 = "回復状態を確認しながら、ウォームアップ時の反応をみてください。";
+      } else if (byCategory.digestive.length > 0) {
+        sentence2 = "食事・水分摂取状況もあわせて確認してください。";
+      }
+
+      const highPriorityCount = unique.filter(f => f.priority >= 3).length;
+
+      let sentence3 = "";
+      if (highPriorityCount >= 3) {
+        sentence3 = "複数項目に注意所見があるため、練習前にスタッフで状態確認を行ってください。";
+      } else if (highPriorityCount >= 1) {
+        sentence3 = "練習前の状態確認を推奨します。";
+      } else {
+        sentence3 = "大きな問題がなければ、通常どおり経過を確認してください。";
+      }
+
+      return `${sentence1}${sentence2}${sentence3}`;
     }
 
     form.addEventListener("submit", async (e) => {
