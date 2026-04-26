@@ -447,7 +447,6 @@
         .filter(row => row.date < today.date)
         .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      // 過去データがない場合は、当日の所見のみ返す（比較コメントは出さない）
       if (historyBeforeToday.length === 0) {
         return findings;
       }
@@ -456,72 +455,71 @@
 
       if (prev.health != null) {
         const diff = today.health - prev.health;
-        if (diff <= -10) addFinding(findings, "bad", "recovery", 3, "全般的な体調が前回より低下しています");
-        else if (diff >= 10) addFinding(findings, "good", "recovery", 2, "全般的な体調は前回より改善しています");
+        if (diff <= -5) addFinding(findings, "bad", "recovery", 3, "全般的な体調が前回より低下しています");
+        else if (diff >= 5) addFinding(findings, "good", "recovery", 2, "全般的な体調は前回より改善しています");
       }
 
       if (prev.fatigue != null) {
         const diff = today.fatigue - prev.fatigue;
-        if (diff >= 10) addFinding(findings, "bad", "recovery", 3, "疲労感が前回より上昇しています");
-        else if (diff <= -10) addFinding(findings, "good", "recovery", 2, "疲労感は前回より軽減しています");
+        if (diff >= 5) addFinding(findings, "bad", "recovery", 3, "疲労感が前回より上昇しています");
+        else if (diff <= -5) addFinding(findings, "good", "recovery", 2, "疲労感は前回より軽減しています");
       }
 
       if (prev.sleep_quality != null) {
         const diff = today.sleep_quality - prev.sleep_quality;
-        if (diff <= -10) addFinding(findings, "bad", "recovery", 2, "睡眠の深さが前回より低下しています");
-        else if (diff >= 10) addFinding(findings, "good", "recovery", 2, "睡眠の深さは前回より改善しています");
+        if (diff <= -5) addFinding(findings, "bad", "recovery", 2, "睡眠の深さが前回より低下しています");
+        else if (diff >= 5) addFinding(findings, "good", "recovery", 2, "睡眠の深さは前回より改善しています");
       }
 
       if (prev.appetite != null) {
         const diff = today.appetite - prev.appetite;
-        if (diff <= -10) addFinding(findings, "bad", "recovery", 2, "食欲が前回より低下しています");
-        else if (diff >= 10) addFinding(findings, "good", "recovery", 2, "食欲は前回より改善しています");
+        if (diff <= -5) addFinding(findings, "bad", "recovery", 2, "食欲が前回より低下しています");
+        else if (diff >= 5) addFinding(findings, "good", "recovery", 2, "食欲は前回より改善しています");
       }
 
       if (prev.spo2 != null && today.spo2 != null) {
         const diff = today.spo2 - prev.spo2;
-        if (diff <= -2) addFinding(findings, "bad", "altitude", 3, "SpO₂が前回より低下しています");
-        else if (diff >= 2) addFinding(findings, "good", "altitude", 2, "SpO₂は前回より改善しています");
+        if (diff <= -1) addFinding(findings, "bad", "altitude", 3, "SpO₂が前回より低下しています");
+        else if (diff >= 1) addFinding(findings, "good", "altitude", 2, "SpO₂は前回より改善しています");
       }
 
       if (prev.pulse != null && today.pulse != null) {
         const diff = today.pulse - prev.pulse;
-        if (diff >= 8) addFinding(findings, "bad", "altitude", 2, "脈拍数が前回より上昇しています");
-        else if (diff <= -8) addFinding(findings, "good", "recovery", 2, "脈拍数は前回より低下しています");
+        if (diff >= 5) addFinding(findings, "bad", "altitude", 2, "脈拍数が前回より上昇しています");
+        else if (diff <= -5) addFinding(findings, "good", "recovery", 2, "脈拍数は前回より低下しています");
       }
 
       if (prev.injury_severity != null) {
         const diff = today.injury_severity - prev.injury_severity;
-        if (diff >= 10) addFinding(findings, "bad", "injury", 3, "故障・怪我の程度が前回より強くなっています");
-        else if (diff <= -10) addFinding(findings, "good", "injury", 2, "故障・怪我の程度は前回より軽減しています");
+        if (diff >= 5) addFinding(findings, "bad", "injury", 3, "故障・怪我の程度が前回より強くなっています");
+        else if (diff <= -5) addFinding(findings, "good", "injury", 2, "故障・怪我の程度は前回より軽減しています");
       }
 
-      // 最近平均との比較は、過去データが3件以上ある場合のみ行う
       if (historyBeforeToday.length >= 3) {
         const recent3 = historyBeforeToday.slice(-3);
 
         const fatigueAvg = avg(recent3.map(x => x.fatigue).filter(x => x != null));
         if (fatigueAvg != null) {
-          if (today.fatigue >= fatigueAvg + 10) addFinding(findings, "bad", "recovery", 2, "疲労感が最近の平均より高くなっています");
-          else if (today.fatigue <= fatigueAvg - 10) addFinding(findings, "good", "recovery", 2, "疲労感は最近の平均より低くなっています");
+          if (today.fatigue >= fatigueAvg + 5) addFinding(findings, "bad", "recovery", 2, "疲労感が最近の平均より高くなっています");
+          else if (today.fatigue <= fatigueAvg - 5) addFinding(findings, "good", "recovery", 2, "疲労感は最近の平均より低くなっています");
         }
 
         const healthAvg = avg(recent3.map(x => x.health).filter(x => x != null));
         if (healthAvg != null) {
-          if (today.health <= healthAvg - 10) addFinding(findings, "bad", "recovery", 2, "全般的な体調が最近の平均より低下しています");
-          else if (today.health >= healthAvg + 10) addFinding(findings, "good", "recovery", 2, "全般的な体調は最近の平均より良好です");
+          if (today.health <= healthAvg - 5) addFinding(findings, "bad", "recovery", 2, "全般的な体調が最近の平均より低下しています");
+          else if (today.health >= healthAvg + 5) addFinding(findings, "good", "recovery", 2, "全般的な体調は最近の平均より良好です");
         }
 
         const sleepAvg = avg(recent3.map(x => x.sleep_quality).filter(x => x != null));
         if (sleepAvg != null) {
-          if (today.sleep_quality <= sleepAvg - 10) addFinding(findings, "bad", "recovery", 2, "睡眠の深さが最近の平均より低下しています");
-          else if (today.sleep_quality >= sleepAvg + 10) addFinding(findings, "good", "recovery", 2, "睡眠の深さは最近の平均より良好です");
+          if (today.sleep_quality <= sleepAvg - 5) addFinding(findings, "bad", "recovery", 2, "睡眠の深さが最近の平均より低下しています");
+          else if (today.sleep_quality >= sleepAvg + 5) addFinding(findings, "good", "recovery", 2, "睡眠の深さは最近の平均より良好です");
         }
 
         const spo2Avg = avg(recent3.map(x => x.spo2).filter(x => x != null));
         if (spo2Avg != null && today.spo2 != null) {
-          if (today.spo2 <= spo2Avg - 2) addFinding(findings, "bad", "altitude", 3, "SpO₂が最近の平均より低下しています");
-          else if (today.spo2 >= spo2Avg + 2) addFinding(findings, "good", "altitude", 2, "SpO₂は最近の平均より改善しています");
+          if (today.spo2 <= spo2Avg - 1) addFinding(findings, "bad", "altitude", 3, "SpO₂が最近の平均より低下しています");
+          else if (today.spo2 >= spo2Avg + 1) addFinding(findings, "good", "altitude", 2, "SpO₂は最近の平均より改善しています");
         }
       }
 
