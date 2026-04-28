@@ -380,7 +380,7 @@
 
       if (data.training_intensity >= 80) addFinding(findings, "bad", "load", 2, "前日の練習強度が高めです");
 
-      if (data.spo2 !== null && data.spo2 <= 92) addFinding(findings, "bad", "altitude", 3, "SpO₂が低めです");
+      if (data.spo2 !== null && data.spo2 <= 93) addFinding(findings, "bad", "altitude", 3, "SpO₂が低めです");
       if (data.pulse !== null && data.pulse >= 80) addFinding(findings, "bad", "altitude", 2, "脈拍数が高めです");
 
       if (data.temperature !== null && data.temperature >= 37.0) {
@@ -392,7 +392,7 @@
       }
 
       if (hasItem(data.symptoms, "頭痛")) {
-        addFinding(findings, "bad", "altitude", 3, "頭痛の申告があります");
+        addFinding(findings, "bad", "altitude", 3, "頭痛の回答があります");
       }
 
       if (
@@ -411,7 +411,7 @@
         hasItem(data.symptoms, "腹痛") ||
         hasItem(data.symptoms, "吐き気")
       ) {
-        addFinding(findings, "bad", "digestive", 3, "消化器症状の申告があります");
+        addFinding(findings, "bad", "digestive", 3, "消化器症状が見られます");
       }
 
       return findings;
