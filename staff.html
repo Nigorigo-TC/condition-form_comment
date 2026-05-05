@@ -152,7 +152,6 @@
     const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
 
-    // URLの ?team=〇〇 から表示チームを取得
     function getTeamFromURL() {
       const params = new URLSearchParams(window.location.search);
       return params.get("team") || "トーエネック";
@@ -210,6 +209,36 @@
       return [...new Set(data.map(row => row.date))]
         .filter(Boolean)
         .sort();
+    }
+
+    function getYAxisConfig(metricKey) {
+      switch (metricKey) {
+        case "health":
+        case "fatigue":
+        case "sleep_quality":
+        case "appetite":
+        case "injury_severity":
+        case "training_intensity":
+          return {
+            min: 0,
+            max: 100,
+            ticks: {
+              stepSize: 20
+            }
+          };
+
+        case "bowel_shape":
+          return {
+            min: 1,
+            max: 7,
+            ticks: {
+              stepSize: 1
+            }
+          };
+
+        default:
+          return {};
+      }
     }
 
     function makeSimpleComment(latest, prev) {
@@ -464,6 +493,8 @@
           };
         });
 
+        const yConfig = getYAxisConfig(metricKey);
+
         const chart = new Chart(canvas, {
           type: "line",
           data: {
@@ -496,6 +527,7 @@
                 }
               },
               y: {
+                ...yConfig,
                 title: {
                   display: true,
                   text: metric.label
