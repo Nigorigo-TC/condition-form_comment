@@ -190,10 +190,17 @@
 
     function normalizeName(name) {
       if (!name) return "";
+
       return String(name)
+        .normalize("NFKC")
         .replace(/\s+/g, "")
         .replace(/　+/g, "")
         .trim();
+    }
+
+    function getDisplayName(normalizedName) {
+      const row = rawData.find(r => r.name_normalized === normalizedName);
+      return row ? row.name_original : normalizedName;
     }
 
     function todayStr() {
@@ -338,11 +345,12 @@
         return;
       }
 
-      rawData = await res.json();
+      const data = await res.json();
 
-      rawData = rawData.map(row => ({
+      rawData = data.map(row => ({
         ...row,
-        name: normalizeName(row.name)
+        name_original: row.name,
+        name_normalized: normalizeName(row.name)
       }));
 
       if (!rawData || rawData.length === 0) {
@@ -360,15 +368,21 @@
     }
 
     function renderFilters() {
-      const athleteNames = [...new Set(rawData.map(row => normalizeName(row.name)).filter(Boolean))].sort();
+      const athleteNames = [
+        ...new Set(rawData.map(row => row.name_normalized).filter(Boolean))
+      ].sort();
 
       document.getElementById("athleteFilters").innerHTML =
-        athleteNames.map(name => `
-          <label>
-            <input type="checkbox" class="athlete-check" value="${name}" checked onchange="renderAll()">
-            ${name}
-          </label>
-        `).join("");
+        athleteNames.map(normalizedName => {
+          const displayName = getDisplayName(normalizedName);
+
+          return `
+            <label>
+              <input type="checkbox" class="athlete-check" value="${normalizedName}" checked onchange="renderAll()">
+              ${displayName}
+            </label>
+          `;
+        }).join("");
 
       document.getElementById("metricFilters").innerHTML =
         metrics.map(m => `
@@ -407,9 +421,9 @@
           </tr>
       `;
 
-      selectedAthletes.forEach(name => {
+      selectedAthletes.forEach(normalizedName => {
         const rows = rawData
-          .filter(row => normalizeName(row.name) === normalizeName(name))
+          .filter(row => row.name_normalized === normalizedName)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
 
         if (rows.length === 0) return;
@@ -417,6 +431,7 @@
         const latest = rows[rows.length - 1];
         const prev = rows.length >= 2 ? rows[rows.length - 2] : null;
         const comment = makeSimpleComment(latest, prev);
+        const displayName = getDisplayName(normalizedName);
 
         const isBad =
           comment.includes("低下") ||
@@ -433,7 +448,7 @@
 
         html += `
           <tr>
-            <td>${name}</td>
+            <td>${displayName}</td>
             <td>${latest.date ?? ""}</td>
             <td>${latest.health ?? ""}</td>
             <td>${latest.fatigue ?? ""}</td>
@@ -464,7 +479,7 @@
       }
 
       const filteredData = rawData.filter(row =>
-        selectedAthletes.includes(normalizeName(row.name))
+        selectedAthletes.includes(row.name_normalized)
       );
 
       const labels = getAllDates(filteredData);
@@ -492,9 +507,9 @@
         chartBox.appendChild(canvas);
         chartsDiv.appendChild(chartBox);
 
-        const datasets = selectedAthletes.map((name, idx) => {
+        const datasets = selectedAthletes.map((normalizedName, idx) => {
           const athleteRows = rawData
-            .filter(row => normalizeName(row.name) === normalizeName(name))
+            .filter(row => row.name_normalized === normalizedName)
             .sort((a, b) => new Date(a.date) - new Date(b.date));
 
           const valuesByDate = {};
@@ -508,7 +523,7 @@
           });
 
           return {
-            label: name,
+            label: getDisplayName(normalizedName),
             data: labels.map(date => valuesByDate[date] ?? null),
             borderColor: colorForIndex(idx),
             backgroundColor: colorForIndex(idx),
