@@ -15,9 +15,7 @@
       line-height: 1.6;
     }
 
-    h1 {
-      margin-bottom: 8px;
-    }
+    h1 { margin-bottom: 8px; }
 
     .note {
       color: #555;
@@ -60,9 +58,7 @@
       gap: 6px;
     }
 
-    label {
-      display: block;
-    }
+    label { display: block; }
 
     .chart-box {
       margin-top: 28px;
@@ -72,9 +68,7 @@
       background: white;
     }
 
-    canvas {
-      max-height: 420px;
-    }
+    canvas { max-height: 420px; }
 
     #status {
       font-weight: bold;
@@ -95,9 +89,7 @@
       text-align: center;
     }
 
-    .summary-table th {
-      background: #f0f0f0;
-    }
+    .summary-table th { background: #f0f0f0; }
 
     .bad {
       color: #d60000;
@@ -118,7 +110,7 @@
 
 <body>
   <h1>スタッフ用コンディション推移</h1>
-  <p class="note">所属固定・期間内データがある選手をグラフ化します。</p>
+  <p class="note">URLで指定された所属のデータを表示します。</p>
 
   <div class="controls">
     <div>
@@ -160,8 +152,13 @@
     const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
 
-    // ここでスタッフ用ページの所属を固定
-    const STAFF_TEAM = "相洋高校";
+    // URLの ?team=〇〇 から表示チームを取得
+    function getTeamFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("team") || "相洋高校";
+    }
+
+    const STAFF_TEAM = getTeamFromURL();
 
     const metrics = [
       { key: "health", label: "全般的体調" },
@@ -213,17 +210,6 @@
       return [...new Set(data.map(row => row.date))]
         .filter(Boolean)
         .sort();
-    }
-
-    function getLatestRow(rows) {
-      return rows
-        .slice()
-        .sort((a, b) => {
-          const da = new Date(a.date);
-          const db = new Date(b.date);
-          return da - db;
-        })
-        .at(-1);
     }
 
     function makeSimpleComment(latest, prev) {
@@ -315,7 +301,8 @@
       rawData = await res.json();
 
       if (!rawData || rawData.length === 0) {
-        document.getElementById("status").textContent = "選択期間にデータがありません。";
+        document.getElementById("status").textContent =
+          `${STAFF_TEAM}：選択期間にデータがありません。`;
         return;
       }
 
@@ -461,7 +448,6 @@
             const value = row[metricKey];
 
             if (value !== null && value !== "" && value !== undefined) {
-              // 同じ日に複数回答がある場合は最後の値を使用
               valuesByDate[row.date] = Number(value);
             }
           });
