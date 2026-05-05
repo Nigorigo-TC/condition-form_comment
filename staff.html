@@ -155,7 +155,7 @@
     // URLの ?team=〇〇 から表示チームを取得
     function getTeamFromURL() {
       const params = new URLSearchParams(window.location.search);
-      return params.get("team") || "相洋高校";
+      return params.get("team") || "トーエネック";
     }
 
     const STAFF_TEAM = getTeamFromURL();
