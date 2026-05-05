@@ -176,52 +176,25 @@
     ];
 
     const axisDescriptions = {
-      health: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "とても悪い",
-        maxText: "とても良い"
-      },
-      fatigue: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "全くない",
-        maxText: "とても強い"
-      },
-      sleep_quality: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "とても浅い",
-        maxText: "とても深い"
-      },
-      appetite: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "全くない",
-        maxText: "とてもある"
-      },
-      injury_severity: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "全くない",
-        maxText: "練習ができない"
-      },
-      training_intensity: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "非常に楽",
-        maxText: "非常にきつい"
-      },
-      bowel_shape: {
-        minValue: 1,
-        maxValue: 7,
-        minText: "固い便",
-        maxText: "水様便"
-      }
+      health: { minValue: 0, maxValue: 100, minText: "とても悪い", maxText: "とても良い" },
+      fatigue: { minValue: 0, maxValue: 100, minText: "全くない", maxText: "とても強い" },
+      sleep_quality: { minValue: 0, maxValue: 100, minText: "とても浅い", maxText: "とても深い" },
+      appetite: { minValue: 0, maxValue: 100, minText: "全くない", maxText: "とてもある" },
+      injury_severity: { minValue: 0, maxValue: 100, minText: "全くない", maxText: "練習ができない" },
+      training_intensity: { minValue: 0, maxValue: 100, minText: "非常に楽", maxText: "非常にきつい" },
+      bowel_shape: { minValue: 1, maxValue: 7, minText: "固い便", maxText: "水様便" }
     };
 
     let rawData = [];
     let charts = [];
+
+    function normalizeName(name) {
+      if (!name) return "";
+      return String(name)
+        .replace(/\s+/g, "")
+        .replace(/　+/g, "")
+        .trim();
+    }
 
     function todayStr() {
       return new Date().toISOString().split("T")[0];
@@ -259,9 +232,7 @@
     function getYAxisConfig(metricKey) {
       const desc = axisDescriptions[metricKey];
 
-      if (!desc) {
-        return {};
-      }
+      if (!desc) return {};
 
       return {
         min: desc.minValue,
@@ -369,6 +340,11 @@
 
       rawData = await res.json();
 
+      rawData = rawData.map(row => ({
+        ...row,
+        name: normalizeName(row.name)
+      }));
+
       if (!rawData || rawData.length === 0) {
         document.getElementById("status").textContent =
           `${STAFF_TEAM}：選択期間にデータがありません。`;
@@ -384,7 +360,7 @@
     }
 
     function renderFilters() {
-      const athleteNames = [...new Set(rawData.map(row => row.name).filter(Boolean))].sort();
+      const athleteNames = [...new Set(rawData.map(row => normalizeName(row.name)).filter(Boolean))].sort();
 
       document.getElementById("athleteFilters").innerHTML =
         athleteNames.map(name => `
@@ -433,7 +409,7 @@
 
       selectedAthletes.forEach(name => {
         const rows = rawData
-          .filter(row => row.name === name)
+          .filter(row => normalizeName(row.name) === normalizeName(name))
           .sort((a, b) => new Date(a.date) - new Date(b.date));
 
         if (rows.length === 0) return;
@@ -487,7 +463,10 @@
         return;
       }
 
-      const filteredData = rawData.filter(row => selectedAthletes.includes(row.name));
+      const filteredData = rawData.filter(row =>
+        selectedAthletes.includes(normalizeName(row.name))
+      );
+
       const labels = getAllDates(filteredData);
 
       selectedMetrics.forEach(metricKey => {
@@ -515,7 +494,7 @@
 
         const datasets = selectedAthletes.map((name, idx) => {
           const athleteRows = rawData
-            .filter(row => row.name === name)
+            .filter(row => normalizeName(row.name) === normalizeName(name))
             .sort((a, b) => new Date(a.date) - new Date(b.date));
 
           const valuesByDate = {};
