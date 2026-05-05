@@ -175,6 +175,51 @@
       { key: "weight", label: "体重" }
     ];
 
+    const axisDescriptions = {
+      health: {
+        minValue: 0,
+        maxValue: 100,
+        minText: "とても悪い",
+        maxText: "とても良い"
+      },
+      fatigue: {
+        minValue: 0,
+        maxValue: 100,
+        minText: "全くない",
+        maxText: "とても強い"
+      },
+      sleep_quality: {
+        minValue: 0,
+        maxValue: 100,
+        minText: "とても浅い",
+        maxText: "とても深い"
+      },
+      appetite: {
+        minValue: 0,
+        maxValue: 100,
+        minText: "全くない",
+        maxText: "とてもある"
+      },
+      injury_severity: {
+        minValue: 0,
+        maxValue: 100,
+        minText: "全くない",
+        maxText: "練習ができない"
+      },
+      training_intensity: {
+        minValue: 0,
+        maxValue: 100,
+        minText: "非常に楽",
+        maxText: "非常にきつい"
+      },
+      bowel_shape: {
+        minValue: 1,
+        maxValue: 7,
+        minText: "固い便",
+        maxText: "水様便"
+      }
+    };
+
     let rawData = [];
     let charts = [];
 
@@ -212,33 +257,28 @@
     }
 
     function getYAxisConfig(metricKey) {
-      switch (metricKey) {
-        case "health":
-        case "fatigue":
-        case "sleep_quality":
-        case "appetite":
-        case "injury_severity":
-        case "training_intensity":
-          return {
-            min: 0,
-            max: 100,
-            ticks: {
-              stepSize: 20
-            }
-          };
+      const desc = axisDescriptions[metricKey];
 
-        case "bowel_shape":
-          return {
-            min: 1,
-            max: 7,
-            ticks: {
-              stepSize: 1
-            }
-          };
-
-        default:
-          return {};
+      if (!desc) {
+        return {};
       }
+
+      return {
+        min: desc.minValue,
+        max: desc.maxValue,
+        ticks: {
+          stepSize: metricKey === "bowel_shape" ? 1 : 20,
+          callback: function(value) {
+            if (value === desc.minValue) {
+              return `${value}（${desc.minText}）`;
+            }
+            if (value === desc.maxValue) {
+              return `${value}（${desc.maxText}）`;
+            }
+            return value;
+          }
+        }
+      };
     }
 
     function makeSimpleComment(latest, prev) {
@@ -458,7 +498,14 @@
         chartBox.className = "chart-box";
 
         const title = document.createElement("h3");
-        title.textContent = metric.label;
+        const axisDesc = axisDescriptions[metricKey];
+
+        if (axisDesc) {
+          title.textContent =
+            `${metric.label}：${axisDesc.minValue}（${axisDesc.minText}）〜${axisDesc.maxValue}（${axisDesc.maxText}）`;
+        } else {
+          title.textContent = metric.label;
+        }
 
         const canvas = document.createElement("canvas");
 
