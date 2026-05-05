@@ -194,12 +194,17 @@
       return String(name)
         .normalize("NFKC")
         .replace(/[\s\u00A0\u1680\u180E\u2000-\u200D\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, "")
+        .replace(/[・･.,，．、。]/g, "")
         .trim();
     }
 
     function getDisplayName(normalizedName) {
-      const row = rawData.find(r => r.name_normalized === normalizedName);
-      return row ? row.name_original : normalizedName;
+      const rows = rawData.filter(r => r.name_normalized === normalizedName);
+
+      if (rows.length === 0) return normalizedName;
+
+      // 表示名は一番最初に出てきた元の名前を使う
+      return rows[0].name_original || normalizedName;
     }
 
     function todayStr() {
