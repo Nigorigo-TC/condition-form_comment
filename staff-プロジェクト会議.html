@@ -294,8 +294,8 @@
 
       if (latest.pulse != null && prev.pulse != null) {
         const diff = latest.pulse - prev.pulse;
-        if (diff >= 8) comments.push("脈拍上昇");
-        if (diff <= -8) comments.push("脈拍低下");
+        if (diff >= 5) comments.push("脈拍上昇");
+        if (diff <= -5) comments.push("脈拍低下");
       }
 
       if (latest.injury_severity != null && prev.injury_severity != null) {
