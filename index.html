@@ -574,7 +574,7 @@
         }
 
         if (badByCategory.injury.length > 0) {
-          main.push("故障・怪我に関する申告があります");
+          main.push("故障・怪我に関する回答があります");
         }
 
         if (badByCategory.recovery.length > 0) {
@@ -607,9 +607,9 @@
 
         const highPriorityCount = bad.filter(f => f.priority >= 3).length;
         if (highPriorityCount >= 3) {
-          comment += "複数項目に注意所見があるため、練習前にスタッフで状態確認を行ってください。";
+          comment += "複数項目に注意所見があるため、練習前に体調等ご確認いただければ幸いです。";
         } else {
-          comment += "練習前の状態確認を推奨します。";
+          comment += "練習前に体調等ご確認いただいた方がいいかもしれません。";
         }
 
         return comment;
@@ -623,13 +623,13 @@
         const parts = [...recoveryGood, ...altitudeGood, ...injuryGood];
 
         if (parts.length > 0) {
-          return `${parts.join("、")}。全体として回復傾向がみられます。引き続き状態を確認しながら練習を進めてください。`;
+          return `${parts.join("、")}。全体として回復傾向がみられます。引き続き状態を確認しながらトレーニングを進めていただければと思います。`;
         }
 
-        return "前回または最近の平均と比べて、いくつかの項目で改善傾向がみられます。引き続き経過を確認してください。";
+        return "前回または最近の平均と比べて、いくつかの項目で改善傾向がみられます。引き続き経過を確認させていただきます。";
       }
 
-      return "大きな問題は目立たず、コンディションは概ね安定しています。本日も通常どおり状態を確認しながら進めてください。";
+      return "大きな問題は目立たず、コンディションは概ね安定しています。";
     }
 
     function generateTrendComment(today, history) {
