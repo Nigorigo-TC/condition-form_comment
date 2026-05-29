@@ -357,7 +357,8 @@
 
       if (!rawData || rawData.length === 0) {
         document.getElementById("status").textContent =
-          `${STAFF_TEAM}：選択期間にデータがありません。`;
+          document.getElementById("status").textContent =
+  `取得件数：${data.length}件`;
         return;
       }
 
