@@ -328,10 +328,14 @@
         ...metrics.map(m => m.key)
       ].join(",");
 
-      const url =
-         `${SUPABASE_URL}/rest/v1/condition_s` +
-         `?select=${selectCols}` +
-         `&order=date.asc`;
+
+        const url =
+          `${SUPABASE_URL}/rest/v1/condition_s` +
+          `?team=eq.${encodeURIComponent(STAFF_TEAM)}` +
+          `&date=gte.${encodeURIComponent(start)}` +
+          `&date=lte.${encodeURIComponent(end)}` +
+          `&select=${selectCols}` +
+          `&order=date.asc`;
 
       const res = await fetch(url, {
         headers: {
