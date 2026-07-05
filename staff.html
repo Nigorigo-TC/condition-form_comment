@@ -403,6 +403,38 @@
       return comments.join(" / ");
     }
 
+
+    async function fetchAllRows(url) {
+      const pageSize = 1000;
+      let from = 0;
+      let allRows = [];
+
+      while (true) {
+        const to = from + pageSize - 1;
+
+        const res = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            Range: `${from}-${to}`
+          }
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text);
+        }
+
+        const rows = await res.json();
+        allRows = allRows.concat(rows);
+
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+
+      return allRows;
+    }
+
     async function loadData() {
       destroyCharts();
 
@@ -422,37 +454,24 @@
         ...metrics.map(m => m.key)
       ].join(",");
 
-      // TEAM_ALIASES に登録した表記ゆれを Supabase 側で広めに取得します。
-      // eq ではなく ilike を使うため、Aisan / AISAN / Aisan の後ろに空白がある場合も拾えます。
-      // 取得後、ブラウザ側で normalizeTeam により正式所属だけに絞り込みます。
-      const teamOrFilter = STAFF_TEAM_QUERY_VALUES
-        .map(team => `team.ilike.*${String(team).trim()}*`)
-        .join(",");
-
+      // 所属名では絞らず、選択期間内のデータを取得します。
+      // その後、ブラウザ側で TEAM_ALIASES に基づいて正式所属名へそろえて絞り込みます。
+      // これにより、愛三工業 / 愛三 / Aisan などの表記ゆれを同じ所属として扱えます。
       const url =
         `${SUPABASE_URL}/rest/v1/condition` +
         `?date=gte.${encodeURIComponent(start)}` +
         `&date=lte.${encodeURIComponent(end)}` +
-        `&or=${encodeURIComponent(`(${teamOrFilter})`)}` +
         `&select=${selectCols}` +
-        `&order=date.asc` +
-        `&limit=5000`;
+        `&order=date.asc`;
 
-      const res = await fetch(url, {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          Range: "0-4999"
-        }
-      });
+      let data = [];
 
-      if (!res.ok) {
-        const text = await res.text();
-        document.getElementById("status").textContent = `取得エラー: ${text}`;
+      try {
+        data = await fetchAllRows(url);
+      } catch (error) {
+        document.getElementById("status").textContent = `取得エラー: ${error.message}`;
         return;
       }
-
-      const data = await res.json();
 
       rawData = data
         .map(row => {
