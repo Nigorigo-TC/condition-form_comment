@@ -159,6 +159,10 @@
         "愛三工業",
         "愛三工業陸上競技部",
         "愛三",
+        "愛三工業株式会社",
+        "株式会社愛三工業",
+        "（株）愛三工業",
+        "(株)愛三工業",
         "Aisan",
         "(株)愛三工業"
       ]
@@ -226,7 +230,28 @@
     }
 
     const STAFF_TEAMS = [...new Set(getTeamsFromURL())];
-    const STAFF_TEAM_KEYS = STAFF_TEAMS.map(team => normalizeTeam(team));
+
+    function getAliasKeysForOfficialTeam(officialName) {
+      const officialKey = normalizeTeam(officialName);
+      const aliases = TEAM_ALIASES[officialName] || [];
+
+      return [
+        officialName,
+        officialKey,
+        ...aliases
+      ]
+        .map(team => normalizeTeam(team))
+        .filter(Boolean);
+    }
+
+    const STAFF_TEAM_KEYS = [
+      ...new Set(
+        STAFF_TEAMS.flatMap(team => {
+          const officialName = getOfficialTeamName(team);
+          return getAliasKeysForOfficialTeam(officialName);
+        })
+      )
+    ];
 
     const metrics = [
       { key: "health", label: "全般的体調" },
@@ -425,6 +450,7 @@
 
       rawData = data
         .map(row => {
+          const teamOriginalNormalized = normalizeTeam(row.team);
           const teamDisplay = getOfficialTeamName(row.team);
           const teamNormalized = normalizeTeam(teamDisplay);
           const nameNormalized = normalizeName(row.name);
@@ -432,6 +458,7 @@
           return {
             ...row,
             team_original: row.team,
+            team_original_normalized: teamOriginalNormalized,
             team_display: teamDisplay,
             team_normalized: teamNormalized,
             name_original: row.name,
@@ -439,7 +466,10 @@
             athlete_key: `${teamNormalized}__${nameNormalized}`
           };
         })
-        .filter(row => STAFF_TEAM_KEYS.includes(row.team_normalized));
+        .filter(row =>
+          STAFF_TEAM_KEYS.includes(row.team_original_normalized) ||
+          STAFF_TEAM_KEYS.includes(row.team_normalized)
+        );
 
       if (!rawData || rawData.length === 0) {
         document.getElementById("status").textContent =
