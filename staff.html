@@ -422,13 +422,18 @@
         ...metrics.map(m => m.key)
       ].join(",");
 
-      // 所属名の表記ゆれを確実に拾うため、Supabase側では所属で絞らず、期間だけで取得します。
-      // 取得後にブラウザ側で TEAM_ALIASES に基づいて絞り込みます。
-      // これにより、Aisan / Aisan（末尾スペース）などの入力ゆれも拾えます。
+      // TEAM_ALIASES に登録した表記ゆれを Supabase 側で広めに取得します。
+      // eq ではなく ilike を使うため、Aisan / AISAN / Aisan の後ろに空白がある場合も拾えます。
+      // 取得後、ブラウザ側で normalizeTeam により正式所属だけに絞り込みます。
+      const teamOrFilter = STAFF_TEAM_QUERY_VALUES
+        .map(team => `team.ilike.*${String(team).trim()}*`)
+        .join(",");
+
       const url =
         `${SUPABASE_URL}/rest/v1/condition` +
         `?date=gte.${encodeURIComponent(start)}` +
         `&date=lte.${encodeURIComponent(end)}` +
+        `&or=${encodeURIComponent(`(${teamOrFilter})`)}` +
         `&select=${selectCols}` +
         `&order=date.asc` +
         `&limit=5000`;
