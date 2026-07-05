@@ -165,7 +165,8 @@
         "愛三工業株式会社",
         "愛三陸上競技部",
         "Aisan",
-        "AISAN"
+        "AISAN",
+        "aisan"
       ]
 
      
@@ -196,6 +197,7 @@
         .replace(/株式会社$/g, "")
         .replace(/陸上競技部$/g, "")
         .replace(/陸上部$/g, "")
+        .toLowerCase()
         .trim();
     }
 
@@ -420,17 +422,13 @@
         ...metrics.map(m => m.key)
       ].join(",");
 
-      // TEAM_ALIASES に登録した表記ゆれを、Supabase側でまとめて取得します。
-      // 例：?team=愛三工業 → 愛三工業 / 愛三 / 愛三工業陸上競技部 などを取得
-      const teamOrFilter = STAFF_TEAM_QUERY_VALUES
-        .map(team => `team.eq.${team}`)
-        .join(",");
-
+      // 所属名の表記ゆれを確実に拾うため、Supabase側では所属で絞らず、期間だけで取得します。
+      // 取得後にブラウザ側で TEAM_ALIASES に基づいて絞り込みます。
+      // これにより、Aisan / Aisan（末尾スペース）などの入力ゆれも拾えます。
       const url =
         `${SUPABASE_URL}/rest/v1/condition` +
         `?date=gte.${encodeURIComponent(start)}` +
         `&date=lte.${encodeURIComponent(end)}` +
-        `&or=${encodeURIComponent(`(${teamOrFilter})`)}` +
         `&select=${selectCols}` +
         `&order=date.asc` +
         `&limit=5000`;
