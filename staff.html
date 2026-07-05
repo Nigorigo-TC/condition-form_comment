@@ -152,12 +152,103 @@
     const SUPABASE_URL = "https://zadmkthnxgbgsipxciuf.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphZG1rdGhueGdiZ3NpcHhjaXVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NjMxNTEsImV4cCI6MjA1OTIzOTE1MX0.dv5vl3aZ6gcaDHi2-W3F4rT4wTrB3U1jgretX-yG_VU";
 
-    function getTeamFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("team") || "トーエネック";
+    // 左側が正式表示したい所属名、右側が拾いたい表記ゆれです。
+    // ここに必要な所属を追加していけばOKです。
+    const TEAM_ALIASES = {
+      "愛三工業": [
+        "愛三工業",
+        "愛三",
+        "愛三工業陸上競技部",
+        "株式会社愛三工業",
+        "（株）愛三工業",
+        "(株)愛三工業",
+        "愛三工業株式会社",
+        "愛三陸上競技部",
+        "Aisan",
+        "AISAN"
+      ]
+
+     
+
+      // 追加例：
+      // ,"〇〇高校": [
+      //   "〇〇高校",
+      //   "〇〇高",
+      //   "〇〇高等学校"
+      // ]
+      // ,"〇〇大学": [
+      //   "〇〇大学",
+      //   "〇〇大",
+      //   "〇〇大学陸上競技部"
+      // ]
+    };
+
+    function normalizeTeam(team) {
+      if (!team) return "";
+
+      return String(team)
+        .normalize("NFKC")
+        .replace(/[\s\u00A0\u1680\u180E\u2000-\u200D\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, "")
+        .replace(/[・･.,，．、。]/g, "")
+        .replace(/[()（）［］\[\]「」『』]/g, "")
+        .replace(/^株式会社/g, "")
+        .replace(/^株/g, "")
+        .replace(/株式会社$/g, "")
+        .replace(/陸上競技部$/g, "")
+        .replace(/陸上部$/g, "")
+        .trim();
     }
 
-    const STAFF_TEAM = getTeamFromURL();
+    function buildTeamAliasMap() {
+      const map = {};
+
+      Object.entries(TEAM_ALIASES).forEach(([officialName, aliases]) => {
+        map[normalizeTeam(officialName)] = officialName;
+
+        aliases.forEach(alias => {
+          map[normalizeTeam(alias)] = officialName;
+        });
+      });
+
+      return map;
+    }
+
+    const TEAM_ALIAS_MAP = buildTeamAliasMap();
+
+    function getOfficialTeamName(team) {
+      const normalized = normalizeTeam(team);
+      return TEAM_ALIAS_MAP[normalized] || team;
+    }
+
+    function getTeamsFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const teamParam = params.get("team") || "愛三工業";
+
+      return teamParam
+        .split(",")
+        .map(team => getOfficialTeamName(team.trim()))
+        .filter(Boolean);
+    }
+
+    const STAFF_TEAMS = [...new Set(getTeamsFromURL())];
+    const STAFF_TEAM_KEYS = STAFF_TEAMS.map(team => normalizeTeam(team));
+
+    function getTeamQueryValues() {
+      const values = [];
+
+      STAFF_TEAMS.forEach(team => {
+        const officialName = getOfficialTeamName(team);
+        values.push(officialName);
+
+        if (TEAM_ALIASES[officialName]) {
+          TEAM_ALIASES[officialName].forEach(alias => values.push(alias));
+        }
+      });
+
+      return [...new Set(values.map(v => String(v).trim()).filter(Boolean))];
+    }
+
+    const STAFF_TEAM_QUERY_VALUES = getTeamQueryValues();
 
     const metrics = [
       { key: "health", label: "全般的体調" },
@@ -176,52 +267,39 @@
     ];
 
     const axisDescriptions = {
-      health: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "とても悪い",
-        maxText: "とても良い"
-      },
-      fatigue: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "全くない",
-        maxText: "とても強い"
-      },
-      sleep_quality: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "とても浅い",
-        maxText: "とても深い"
-      },
-      appetite: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "全くない",
-        maxText: "とてもある"
-      },
-      injury_severity: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "全くない",
-        maxText: "練習ができない"
-      },
-      training_intensity: {
-        minValue: 0,
-        maxValue: 100,
-        minText: "非常に楽",
-        maxText: "非常にきつい"
-      },
-      bowel_shape: {
-        minValue: 1,
-        maxValue: 7,
-        minText: "固い便",
-        maxText: "水様便"
-      }
+      health: { minValue: 0, maxValue: 100, minText: "とても悪い", maxText: "とても良い" },
+      fatigue: { minValue: 0, maxValue: 100, minText: "全くない", maxText: "とても強い" },
+      sleep_quality: { minValue: 0, maxValue: 100, minText: "とても浅い", maxText: "とても深い" },
+      appetite: { minValue: 0, maxValue: 100, minText: "全くない", maxText: "とてもある" },
+      injury_severity: { minValue: 0, maxValue: 100, minText: "全くない", maxText: "練習ができない" },
+      training_intensity: { minValue: 0, maxValue: 100, minText: "非常に楽", maxText: "非常にきつい" },
+      bowel_shape: { minValue: 1, maxValue: 7, minText: "固い便", maxText: "水様便" }
     };
 
     let rawData = [];
     let charts = [];
+
+    function normalizeName(name) {
+      if (!name) return "";
+
+      return String(name)
+        .normalize("NFKC")
+        .replace(/[\s\u00A0\u1680\u180E\u2000-\u200D\u2028\u2029\u202F\u205F\u3000\uFEFF]/g, "")
+        .replace(/[・･.,，．、。]/g, "")
+        .trim();
+    }
+
+    function getDisplayName(athleteKey) {
+      const rows = rawData.filter(r => r.athlete_key === athleteKey);
+      if (rows.length === 0) return athleteKey;
+      return rows[0].name_original || athleteKey;
+    }
+
+    function getDisplayTeam(athleteKey) {
+      const rows = rawData.filter(r => r.athlete_key === athleteKey);
+      if (rows.length === 0) return "";
+      return rows[0].team_display || "";
+    }
 
     function todayStr() {
       return new Date().toISOString().split("T")[0];
@@ -258,10 +336,7 @@
 
     function getYAxisConfig(metricKey) {
       const desc = axisDescriptions[metricKey];
-
-      if (!desc) {
-        return {};
-      }
+      if (!desc) return {};
 
       return {
         min: desc.minValue,
@@ -323,7 +398,6 @@
       }
 
       if (comments.length === 0) return "安定";
-
       return comments.join(" / ");
     }
 
@@ -346,18 +420,26 @@
         ...metrics.map(m => m.key)
       ].join(",");
 
+      // TEAM_ALIASES に登録した表記ゆれを、Supabase側でまとめて取得します。
+      // 例：?team=愛三工業 → 愛三工業 / 愛三 / 愛三工業陸上競技部 などを取得
+      const teamOrFilter = STAFF_TEAM_QUERY_VALUES
+        .map(team => `team.eq.${team}`)
+        .join(",");
+
       const url =
         `${SUPABASE_URL}/rest/v1/condition` +
-        `?team=eq.${encodeURIComponent(STAFF_TEAM)}` +
-        `&date=gte.${encodeURIComponent(start)}` +
+        `?date=gte.${encodeURIComponent(start)}` +
         `&date=lte.${encodeURIComponent(end)}` +
+        `&or=${encodeURIComponent(`(${teamOrFilter})`)}` +
         `&select=${selectCols}` +
-        `&order=date.asc`;
+        `&order=date.asc` +
+        `&limit=5000`;
 
       const res = await fetch(url, {
         headers: {
           apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Range: "0-4999"
         }
       });
 
@@ -367,16 +449,34 @@
         return;
       }
 
-      rawData = await res.json();
+      const data = await res.json();
+
+      rawData = data
+        .map(row => {
+          const teamDisplay = getOfficialTeamName(row.team);
+          const teamNormalized = normalizeTeam(teamDisplay);
+          const nameNormalized = normalizeName(row.name);
+
+          return {
+            ...row,
+            team_original: row.team,
+            team_display: teamDisplay,
+            team_normalized: teamNormalized,
+            name_original: row.name,
+            name_normalized: nameNormalized,
+            athlete_key: `${teamNormalized}__${nameNormalized}`
+          };
+        })
+        .filter(row => STAFF_TEAM_KEYS.includes(row.team_normalized));
 
       if (!rawData || rawData.length === 0) {
         document.getElementById("status").textContent =
-          `${STAFF_TEAM}：選択期間にデータがありません。`;
+          `${STAFF_TEAMS.join("・")}：選択期間にデータがありません。`;
         return;
       }
 
       document.getElementById("status").textContent =
-        `${STAFF_TEAM}：${rawData.length}件のデータを取得しました。`;
+        `${STAFF_TEAMS.join("・")}：${rawData.length}件のデータを取得しました。`;
 
       renderFilters();
       renderSummary();
@@ -384,15 +484,21 @@
     }
 
     function renderFilters() {
-      const athleteNames = [...new Set(rawData.map(row => row.name).filter(Boolean))].sort();
+      const athleteKeys = [
+        ...new Set(rawData.map(row => row.athlete_key).filter(Boolean))
+      ].sort();
 
       document.getElementById("athleteFilters").innerHTML =
-        athleteNames.map(name => `
-          <label>
-            <input type="checkbox" class="athlete-check" value="${name}" checked onchange="renderAll()">
-            ${name}
-          </label>
-        `).join("");
+        athleteKeys.map(athleteKey => {
+          const displayName = getDisplayName(athleteKey);
+
+          return `
+            <label>
+              <input type="checkbox" class="athlete-check" value="${athleteKey}" checked onchange="renderAll()">
+              ${displayName}
+            </label>
+          `;
+        }).join("");
 
       document.getElementById("metricFilters").innerHTML =
         metrics.map(m => `
@@ -420,6 +526,7 @@
       let html = `
         <table class="summary-table">
           <tr>
+            <th>所属</th>
             <th>名前</th>
             <th>最新日</th>
             <th>体調</th>
@@ -431,9 +538,9 @@
           </tr>
       `;
 
-      selectedAthletes.forEach(name => {
+      selectedAthletes.forEach(athleteKey => {
         const rows = rawData
-          .filter(row => row.name === name)
+          .filter(row => row.athlete_key === athleteKey)
           .sort((a, b) => new Date(a.date) - new Date(b.date));
 
         if (rows.length === 0) return;
@@ -441,6 +548,8 @@
         const latest = rows[rows.length - 1];
         const prev = rows.length >= 2 ? rows[rows.length - 2] : null;
         const comment = makeSimpleComment(latest, prev);
+        const displayName = getDisplayName(athleteKey);
+        const displayTeam = getDisplayTeam(athleteKey);
 
         const isBad =
           comment.includes("低下") ||
@@ -457,7 +566,8 @@
 
         html += `
           <tr>
-            <td>${name}</td>
+            <td>${displayTeam}</td>
+            <td>${displayName}</td>
             <td>${latest.date ?? ""}</td>
             <td>${latest.health ?? ""}</td>
             <td>${latest.fatigue ?? ""}</td>
@@ -487,7 +597,10 @@
         return;
       }
 
-      const filteredData = rawData.filter(row => selectedAthletes.includes(row.name));
+      const filteredData = rawData.filter(row =>
+        selectedAthletes.includes(row.athlete_key)
+      );
+
       const labels = getAllDates(filteredData);
 
       selectedMetrics.forEach(metricKey => {
@@ -513,9 +626,9 @@
         chartBox.appendChild(canvas);
         chartsDiv.appendChild(chartBox);
 
-        const datasets = selectedAthletes.map((name, idx) => {
+        const datasets = selectedAthletes.map((athleteKey, idx) => {
           const athleteRows = rawData
-            .filter(row => row.name === name)
+            .filter(row => row.athlete_key === athleteKey)
             .sort((a, b) => new Date(a.date) - new Date(b.date));
 
           const valuesByDate = {};
@@ -529,7 +642,7 @@
           });
 
           return {
-            label: name,
+            label: getDisplayName(athleteKey),
             data: labels.map(date => valuesByDate[date] ?? null),
             borderColor: colorForIndex(idx),
             backgroundColor: colorForIndex(idx),
