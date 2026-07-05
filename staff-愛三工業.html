@@ -110,7 +110,7 @@
 
 <body>
   <h1>スタッフ用コンディション推移</h1>
-  <p class="note"><strong>表記ゆれ対応版 v4</strong>：URLで指定した正式所属名に対して、TEAM_ALIASES に登録した表記ゆれもまとめて表示します。</p>
+  <p class="note">URLで指定された所属のデータを表示します。</p>
 
   <div class="controls">
     <div>
@@ -475,9 +475,8 @@
         return;
       }
 
-      const originalTeams = [...new Set(rawData.map(row => row.team_original).filter(Boolean))].join(" / ");
       document.getElementById("status").textContent =
-        `${STAFF_TEAMS.join("・")}：${rawData.length}件のデータを取得しました。（元の所属名：${originalTeams}）`;
+        `${STAFF_TEAMS.join("・")}：${rawData.length}件のデータを取得しました。`;
 
       renderFilters();
       renderSummary();
@@ -492,12 +491,11 @@
       document.getElementById("athleteFilters").innerHTML =
         athleteKeys.map(athleteKey => {
           const displayName = getDisplayName(athleteKey);
-          const displayTeam = getDisplayTeam(athleteKey);
 
           return `
             <label>
               <input type="checkbox" class="athlete-check" value="${athleteKey}" checked onchange="renderAll()">
-              ${displayName}（${displayTeam}）
+              ${displayName}
             </label>
           `;
         }).join("");
@@ -644,7 +642,7 @@
           });
 
           return {
-            label: `${getDisplayName(athleteKey)}（${getDisplayTeam(athleteKey)}）`,
+            label: getDisplayName(athleteKey),
             data: labels.map(date => valuesByDate[date] ?? null),
             borderColor: colorForIndex(idx),
             backgroundColor: colorForIndex(idx),
