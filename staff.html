@@ -91,6 +91,13 @@
 
     .summary-table th { background: #f0f0f0; }
 
+    .symptom-text {
+      text-align: left !important;
+      white-space: normal;
+      word-break: break-word;
+      min-width: 180px;
+    }
+
     .bad {
       color: #d60000;
       font-weight: bold;
@@ -144,6 +151,11 @@
   <div class="section">
     <h3>最新データ一覧</h3>
     <div id="summary"></div>
+  </div>
+
+  <div class="section">
+    <h3>期間内の特記事項一覧</h3>
+    <div id="symptomsTable"></div>
   </div>
 
   <div id="charts"></div>
@@ -442,6 +454,7 @@
       document.getElementById("athleteFilters").innerHTML = "";
       document.getElementById("metricFilters").innerHTML = "";
       document.getElementById("summary").innerHTML = "";
+      document.getElementById("symptomsTable").innerHTML = "";
       document.getElementById("charts").innerHTML = "";
 
       const start = document.getElementById("startDate").value;
@@ -451,6 +464,8 @@
         "date",
         "team",
         "name",
+        "symptoms",
+        "other_symptoms",
         ...metrics.map(m => m.key)
       ].join(",");
 
@@ -502,6 +517,7 @@
 
       renderFilters();
       renderSummary();
+      renderSymptoms();
       renderCharts();
     }
 
@@ -533,6 +549,7 @@
 
     function renderAll() {
       renderSummary();
+      renderSymptoms();
       renderCharts();
     }
 
@@ -604,6 +621,108 @@
       html += "</table>";
       summaryDiv.innerHTML = html;
     }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function hasMeaningfulSymptom(value) {
+      if (value === null || value === undefined) return false;
+
+      const normalized = String(value)
+        .normalize("NFKC")
+        .trim()
+        .toLowerCase();
+
+      if (!normalized) return false;
+
+      const noSymptomValues = [
+        "特になし",
+        "なし",
+        "無し",
+        "特記事項なし",
+        "異常なし",
+        "empty",
+        "null",
+        "-"
+      ].map(v => String(v).normalize("NFKC").trim().toLowerCase());
+
+      return !noSymptomValues.includes(normalized);
+    }
+
+    function renderSymptoms() {
+      const selectedAthletes = getCheckedValues("athlete-check");
+      const symptomsDiv = document.getElementById("symptomsTable");
+
+      if (selectedAthletes.length === 0) {
+        symptomsDiv.innerHTML = "<p>表示する選手を選択してください。</p>";
+        return;
+      }
+
+      const rows = rawData
+        .filter(row => selectedAthletes.includes(row.athlete_key))
+        .filter(row =>
+          hasMeaningfulSymptom(row.symptoms) ||
+          hasMeaningfulSymptom(row.other_symptoms)
+        )
+        .sort((a, b) => {
+          const dateDiff = new Date(b.date) - new Date(a.date);
+          if (dateDiff !== 0) return dateDiff;
+          return getDisplayName(a.athlete_key).localeCompare(
+            getDisplayName(b.athlete_key),
+            "ja"
+          );
+        });
+
+      if (rows.length === 0) {
+        symptomsDiv.innerHTML =
+          '<p class="small">選択期間内に特記事項はありません。</p>';
+        return;
+      }
+
+      let html = `
+        <table class="summary-table">
+          <tr>
+            <th>日付</th>
+            <th>所属</th>
+            <th>名前</th>
+            <th>特記事項</th>
+            <th>その他の症状</th>
+          </tr>
+      `;
+
+      rows.forEach(row => {
+        const displayTeam = row.team_display || "";
+        const displayName = row.name_original || "";
+
+        const symptoms = hasMeaningfulSymptom(row.symptoms)
+          ? row.symptoms
+          : "";
+
+        const otherSymptoms = hasMeaningfulSymptom(row.other_symptoms)
+          ? row.other_symptoms
+          : "";
+
+        html += `
+          <tr>
+            <td>${escapeHtml(row.date)}</td>
+            <td>${escapeHtml(displayTeam)}</td>
+            <td>${escapeHtml(displayName)}</td>
+            <td class="symptom-text">${escapeHtml(symptoms)}</td>
+            <td class="symptom-text">${escapeHtml(otherSymptoms)}</td>
+          </tr>
+        `;
+      });
+
+      html += "</table>";
+      symptomsDiv.innerHTML = html;
+    }
+
 
     function renderCharts() {
       destroyCharts();
